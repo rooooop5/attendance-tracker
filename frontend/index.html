@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0b0c0e;
+      --surface: #141518;
+      --surface-2: #1c1e22;
+      --surface-3: #25282d;
+      --border: rgba(255,255,255,0.09);
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #f2f2f2;
+      --muted: #a0a3a8;
+      --dim: #62666d;
+      --green: #22c55e;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --blue: #38bdf8;
+      --radius: 8px;
+    }
+    body {
+      min-height: 100vh;
+      padding: 28px 18px;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .container { max-width: 1040px; margin: 0 auto; }
+    .header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+    .header-actions { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    h1 { font-size: 20px; font-weight: 650; }
+    .subtle { color: var(--muted); font-size: 13px; }
+    .tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .tab {
+      appearance: none;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 13px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .tab:hover, .tab.active { color: var(--text); }
+    .tab.active { border-bottom-color: var(--text); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .grid { display: grid; gap: 14px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    @media (max-width: 760px) { .grid.two, .grid.three { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title { font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    .card-body { padding: 15px; }
+    .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+    input, select, textarea {
+      width: 100%;
+      min-height: 34px;
+      padding: 7px 9px;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: #101114;
+      color: var(--text);
+      font: inherit;
+      outline: none;
+    }
+    textarea { min-height: 78px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: rgba(56,189,248,.55); }
+    .btn {
+      min-height: 34px;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      padding: 7px 12px;
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--surface-3); }
+    .btn.primary { border-color: rgba(56,189,248,.45); color: #dff6ff; }
+    .btn.danger { border-color: rgba(239,68,68,.45); color: #ffdede; }
+    .btn.ghost { background: transparent; color: var(--muted); }
+    .btn:disabled { opacity: .45; cursor: default; }
+    .message {
+      display: none;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: var(--surface);
+    }
+    .message.error { color: #fecaca; border-color: rgba(239,68,68,.28); background: rgba(239,68,68,.08); }
+    .message.ok { color: #bbf7d0; border-color: rgba(34,197,94,.24); background: rgba(34,197,94,.07); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+    th { color: var(--dim); font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; }
+    tr:last-child td { border-bottom: 0; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface-3);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .badge.green { color: var(--green); border-color: rgba(34,197,94,.25); }
+    .badge.red { color: var(--red); border-color: rgba(239,68,68,.25); }
+    .badge.blue { color: var(--blue); border-color: rgba(56,189,248,.25); }
+    .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .empty { padding: 32px 16px; text-align: center; color: var(--dim); }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    @media (max-width: 620px) { .stats { grid-template-columns: 1fr; } }
+    .stat { border: 1px solid var(--border); border-radius: 8px; padding: 14px; background: #101114; }
+    .stat-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; }
+    .stat-value { margin-top: 5px; font-size: 28px; font-weight: 650; }
+    .list { display: grid; gap: 8px; }
+    .list-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .list-row:last-child { border-bottom: 0; }
+    .schedule-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(110px, 160px) auto;
+      gap: 8px;
+      align-items: end;
+    }
+    .day-group-row td {
+      background: #101114;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    @media (max-width: 620px) { .schedule-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Attendance</h1>
+        <div class="subtle" id="heading-date"></div>
+      </div>
+      <div class="header-actions">
+        <button class="btn ghost" onclick="refreshAll()">Refresh</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="openPanel('attendance', this)">Attendance</button>
+      <button class="tab" onclick="openPanel('classes', this)">Classes</button>
+      <button class="tab" onclick="openPanel('papers', this)">Papers</button>
+      <button class="tab" onclick="openPanel('timetable', this)">Timetable</button>
+      <button class="tab" onclick="openPanel('stats', this)">Stats</button>
+      <button class="tab" onclick="openPanel('settings', this)">Settings</button>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <section class="panel active" id="panel-attendance">
+      <div class="grid">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Daily Attendance</div>
+            <div class="controls">
+              <input type="date" id="date-picker" />
+              <button class="btn" onclick="backfillAttendance()">Backfill</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="controls" style="margin-bottom:12px">
+              <button class="btn" onclick="markAllAttendance(true)">All present</button>
+              <button class="btn" onclick="markAllAttendance(false)">All absent</button>
+            </div>
+            <div class="stats" id="day-stats" style="display:none; margin-bottom:12px">
+              <div class="stat"><div class="stat-label">Classes</div><div class="stat-value" id="day-total">0</div></div>
+              <div class="stat"><div class="stat-label">Attended</div><div class="stat-value" id="day-attended">0</div></div>
+              <div class="stat"><div class="stat-label">Percentage</div><div class="stat-value" id="day-pct">--</div></div>
+            </div>
+            <div class="card">
+              <table id="attendance-table" style="display:none">
+                <thead>
+                  <tr><th>Period</th><th>Paper</th><th>Held</th><th>Attended</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="attendance-body"></tbody>
+              </table>
+              <div class="empty" id="attendance-empty">No attendance loaded.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-classes">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head"><div class="card-title">Add Extra Class</div></div>
+          <div class="card-body grid">
+            <label>Date <input type="date" id="extra-date" /></label>
+            <label>Paper <select id="extra-paper"></select></label>
+            <label>Periods <input id="extra-periods" placeholder="1,2" /></label>
+            <button class="btn primary" onclick="addExtraClass()">Add extra class</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">Substitute Class</div></div>
+          <div class="card-body grid">
+            <label>Date <input type="date" id="sub-date" /></label>
+            <label>Period <input type="number" id="sub-period" min="1" /></label>
+            <label>Substitute Paper <select id="sub-paper"></select></label>
+            <button class="btn primary" onclick="substituteClass()">Substitute</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-papers">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head"><div class="card-title">Create Papers</div></div>
+          <div class="card-body grid">
+            <label>Names <textarea id="paper-names" placeholder="Math&#10;Physics&#10;Chemistry"></textarea></label>
+            <button class="btn primary" onclick="createPapers()">Create papers</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Papers</div>
+            <button class="btn" onclick="loadPapers()">Load</button>
+          </div>
+          <div class="card-body"><div class="list" id="paper-list"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-timetable">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-head"><div class="card-title">Add Day Schedule</div></div>
+          <div class="card-body grid">
+            <label>Day
+              <select id="tt-day">
+                <option>MONDAY</option><option>TUESDAY</option><option>WEDNESDAY</option>
+                <option>THURSDAY</option><option>FRIDAY</option><option>SATURDAY</option><option>SUNDAY</option>
+              </select>
+            </label>
+            <div class="grid" id="tt-class-rows"></div>
+            <button class="btn" onclick="addTimetableRow()">Add row</button>
+            <button class="btn primary" onclick="createTimetable()">Create schedule</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Timetable</div>
+            <button class="btn" onclick="loadTimetable()">Load</button>
+          </div>
+          <div class="card-body">
+            <table id="timetable-table" style="display:none">
+              <thead><tr><th>Day</th><th>Period</th><th>Paper</th></tr></thead>
+              <tbody id="timetable-body"></tbody>
+            </table>
+            <div class="empty" id="timetable-empty">No timetable loaded.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-stats">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Attendance Stats</div>
+          <button class="btn" onclick="loadStats()">Load stats</button>
+        </div>
+        <div class="card-body">
+          <div class="stats" id="overall-stats" style="display:none">
+            <div class="stat"><div class="stat-label">Overall</div><div class="stat-value" id="ov-pct">--</div></div>
+            <div class="stat"><div class="stat-label">Attended</div><div class="stat-value" id="ov-attended">0</div></div>
+            <div class="stat"><div class="stat-label">Held</div><div class="stat-value" id="ov-held">0</div></div>
+          </div>
+          <div class="card" style="margin-top:14px">
+            <table id="paper-stats-table" style="display:none">
+              <thead><tr><th>Paper</th><th>Attended</th><th>Held</th><th>Percentage</th></tr></thead>
+              <tbody id="paper-stats-body"></tbody>
+            </table>
+            <div class="empty" id="stats-empty">No stats loaded.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-settings">
+      <div class="card">
+        <div class="card-head"><div class="card-title">Semester Start</div></div>
+        <div class="card-body grid">
+          <label>Start date <input type="date" id="sem-start-date" /></label>
+          <button class="btn primary" onclick="saveSemesterStart()">Save semester start</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE = location.protocol === 'file:' ? 'http://localhost:8000' : location.origin;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let currentDate = todayStr;
+    let papers = [];
+
+    document.getElementById('date-picker').value = todayStr;
+    document.getElementById('date-picker').addEventListener('change', ensureAttendanceForSelectedDate);
+    document.getElementById('extra-date').value = todayStr;
+    document.getElementById('sub-date').value = todayStr;
+    document.getElementById('sem-start-date').value = todayStr;
+
+    function switchTab(name, el) {
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById(`panel-${name}`).classList.add('active');
+    }
+
+    async function openPanel(name, el) {
+      switchTab(name, el);
+      try {
+        if (name === 'attendance') await ensureAttendanceForSelectedDate();
+        if (name === 'classes') await loadPapers();
+        if (name === 'papers') await loadPapers();
+        if (name === 'timetable') await loadTimetable();
+        if (name === 'stats') await loadStats();
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    function showMessage(text, type = 'ok') {
+      const el = document.getElementById('message');
+      el.textContent = text;
+      el.className = `message ${type}`;
+      el.style.display = 'block';
+      clearTimeout(showMessage.timer);
+      showMessage.timer = setTimeout(() => el.style.display = 'none', 4500);
+    }
+
+    async function api(path, options = {}) {
+      let res;
+      try {
+        res = await fetch(`${API_BASE}${path}`, {
+          headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+          ...options,
+        });
+      } catch {
+        throw new Error(`Cannot reach API at ${API_BASE}`);
+      }
+      const text = await res.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        throw new Error(`Unexpected response from ${API_BASE}`);
+      }
+      if (!res.ok) {
+        throw new Error(data?.detail || `HTTP ${res.status}`);
+      }
+      return data;
+    }
+
+    function datePath(prefix, dateValue) {
+      return dateValue === todayStr ? `${prefix}/today` : `${prefix}/${dateValue}`;
+    }
+
+    function attendancePath(dateValue) {
+      return datePath('/attendance', dateValue);
+    }
+
+    function classPath(dateValue) {
+      return datePath('/classes', dateValue);
+    }
+
+    function fmtDate(value) {
+      const [year, month, day] = value.split('-');
+      return new Date(year, month - 1, day).toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+
+    function parsePeriods(value) {
+      return value.split(',')
+        .map(part => Number(part.trim()))
+        .filter(Number.isInteger);
+    }
+
+    function pctText(value) {
+      return value === null || value === undefined ? '--' : `${Math.round(value * 100)}%`;
+    }
+
+    function statusBadge(entry) {
+      if (!entry.held) return '<span class="badge">Cancelled</span>';
+      return entry.attended ? '<span class="badge green">Present</span>' : '<span class="badge red">Absent</span>';
+    }
+
+    function updatePaperSelects() {
+      const options = papers.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      document.getElementById('extra-paper').innerHTML = options;
+      document.getElementById('sub-paper').innerHTML = options;
+      document.querySelectorAll('.tt-paper').forEach(select => {
+        const selected = select.value;
+        select.innerHTML = options;
+        if (selected) select.value = selected;
+      });
+    }
+
+    function paperOptions(selectedId = '') {
+      return papers
+        .map(p => `<option value="${p.id}" ${String(p.id) === String(selectedId) ? 'selected' : ''}>${p.name}</option>`)
+        .join('');
+    }
+
+    function addTimetableRow(selectedPaper = '', periods = '') {
+      const wrap = document.getElementById('tt-class-rows');
+      const row = document.createElement('div');
+      row.className = 'schedule-row';
+      row.innerHTML = `
+        <label>Paper
+          <select class="tt-paper">${paperOptions(selectedPaper)}</select>
+        </label>
+        <label>Periods
+          <input class="tt-periods" placeholder="1,2" value="${periods}">
+        </label>
+        <button class="btn danger" onclick="this.closest('.schedule-row').remove()">Remove</button>
+      `;
+      wrap.appendChild(row);
+    }
+
+    async function loadPapers() {
+      papers = await api('/papers');
+      updatePaperSelects();
+      const list = document.getElementById('paper-list');
+      list.innerHTML = papers.length
+        ? papers.map(p => `<div class="list-row"><span>${p.name}</span><span class="badge blue">#${p.id}</span></div>`).join('')
+        : '<div class="empty">No papers yet.</div>';
+      return papers;
+    }
+
+    async function createPapers() {
+      const names = document.getElementById('paper-names').value
+        .split('\n')
+        .map(name => name.trim())
+        .filter(Boolean);
+      if (!names.length) return showMessage('Enter at least one paper name.', 'error');
+      try {
+        await api('/papers', {
+          method: 'POST',
+          body: JSON.stringify(names.map(name => ({ name }))),
+        });
+        document.getElementById('paper-names').value = '';
+        await loadPapers();
+        showMessage('Papers created.');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    async function loadAttendance() {
+      const dateValue = document.getElementById('date-picker').value;
+      if (!dateValue) return;
+      currentDate = dateValue;
+      document.getElementById('heading-date').textContent = fmtDate(dateValue);
+      try {
+        const entries = await api(attendancePath(dateValue));
+        renderAttendance(entries);
+      } catch (err) {
+        renderAttendance([]);
+        showMessage(err.message, 'error');
+      }
+    }
+
+    async function ensureAttendanceForSelectedDate() {
+      const dateValue = document.getElementById('date-picker').value;
+      if (!dateValue) return;
+      currentDate = dateValue;
+      document.getElementById('heading-date').textContent = fmtDate(dateValue);
+      try {
+        await api(attendancePath(dateValue), { method: 'POST' });
+        await loadAttendance();
+      } catch (err) {
+        try {
+          await loadAttendance();
+        } catch {
+          renderAttendance([]);
+          showMessage(err.message, 'error');
+        }
+      }
+    }
+
+    async function backfillAttendance() {
+      try {
+        await api('/attendance/backfill', { method: 'POST' });
+        await ensureAttendanceForSelectedDate();
+        showMessage('Backfill complete.');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    function renderAttendance(entries) {
+      const body = document.getElementById('attendance-body');
+      const table = document.getElementById('attendance-table');
+      const empty = document.getElementById('attendance-empty');
+      if (!entries.length) {
+        table.style.display = 'none';
+        empty.style.display = 'block';
+        document.getElementById('day-stats').style.display = 'none';
+        return;
+      }
+      body.innerHTML = entries
+        .sort((a, b) => a.period - b.period || a.paper.name.localeCompare(b.paper.name))
+        .map(entry => `
+          <tr>
+            <td><span class="badge blue">P${entry.period}</span></td>
+            <td>${entry.paper.name}</td>
+            <td>${entry.held ? '<span class="badge green">Held</span>' : '<span class="badge">Cancelled</span>'}</td>
+            <td>${statusBadge(entry)}</td>
+            <td>
+              <div class="row-actions">
+                <button class="btn" onclick="setHeld(${entry.period}, ${entry.paper.id}, ${!entry.held})">${entry.held ? 'Cancel' : 'Restore'}</button>
+                ${entry.held ? `
+                  <button class="btn" onclick="setAttendance(${entry.period}, true)">Present</button>
+                  <button class="btn" onclick="setAttendance(${entry.period}, false)">Absent</button>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      table.style.display = 'table';
+      empty.style.display = 'none';
+      renderDayStats(entries);
+    }
+
+    function renderDayStats(entries) {
+      const active = entries.filter(entry => entry.held);
+      const attended = active.filter(entry => entry.attended).length;
+      document.getElementById('day-total').textContent = active.length;
+      document.getElementById('day-attended').textContent = attended;
+      document.getElementById('day-pct').textContent = active.length ? `${Math.round(attended / active.length * 100)}%` : '--';
+      document.getElementById('day-stats').style.display = 'grid';
+    }
+
+    async function setAttendance(period, attended) {
+      try {
+        const data = await api(`${attendancePath(currentDate)}/${period}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ attended }),
+        });
+        renderAttendance(data.entries || []);
+        showMessage('Attendance updated.');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    async function markAllAttendance(attended) {
+      try {
+        const data = await api(attendancePath(currentDate), {
+          method: 'PATCH',
+          body: JSON.stringify({ attended }),
+        });
+        renderAttendance(data.entries || []);
+        showMessage('Attendance updated.');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    async function setHeld(period, paperId, held) {
+      try {
+        const data = await api(`${classPath(currentDate)}/${period}/papers/${paperId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ held }),
+        });
+        await loadAttendance();
+        showMessage(`${data.paper.name} updated.`);
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    async function addExtraClass() {
+      const dateValue = document.getElementById('extra-date').value;
+      const paper = Number(document.getElementById('extra-paper').value);
+      const periods = parsePeriods(document.getElementById('extra-periods').value);
+      if (!paper || !periods.length) return showMessage('Choose a paper and periods.', 'error');
+      try {
+        await api(classPath(dateValue), {
+          method: 'POST',
+          body: JSON.stringify({ paper, periods }),
+        });
+        document.getElementById('extra-periods').value = '';
+        showMessage('Extra class added.');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    async function substituteClass() {
+      const dateValue = document.getElementById('sub-date').value;
+      const period = Number(document.getElementById('sub-period').value);
+      const paper = Number(document.getElementById('sub-paper').value);
+      if (!period || !paper) return showMessage('Choose a period and paper.', 'error');
+      try {
+        await api(`${classPath(dateValue)}/${period}/substitution`, {
+          method: 'POST',
+          body: JSON.stringify({ paper }),
+        });
+        showMessage('Class substituted.');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    function readTimetableRows() {
+      return [...document.querySelectorAll('.schedule-row')]
+        .map(row => {
+          const paperId = Number(row.querySelector('.tt-paper').value);
+          const paper = papers.find(item => item.id === paperId);
+          return {
+            paper: paper?.name || '',
+            periods: parsePeriods(row.querySelector('.tt-periods').value),
+          };
+        })
+        .filter(item => item.paper && item.periods.length);
+    }
+
+    async function createTimetable() {
+      const day = document.getElementById('tt-day').value;
+      const classes = readTimetableRows();
+      if (!classes.length) return showMessage('Choose at least one paper and period.', 'error');
+      try {
+        await api(`/timetable/${day}`, {
+          method: 'POST',
+          body: JSON.stringify({ classes }),
+        });
+        document.getElementById('tt-class-rows').innerHTML = '';
+        addTimetableRow();
+        await loadTimetable();
+        showMessage('Timetable updated.');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    async function loadTimetable() {
+      try {
+        const rows = await api('/timetable');
+        const body = document.getElementById('timetable-body');
+        body.innerHTML = renderTimetableRows(rows);
+        document.getElementById('timetable-table').style.display = rows.length ? 'table' : 'none';
+        document.getElementById('timetable-empty').style.display = rows.length ? 'none' : 'block';
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    function renderTimetableRows(rows) {
+      const dayOrder = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+      const grouped = rows.reduce((acc, row) => {
+        (acc[row.day] ||= []).push(row);
+        return acc;
+      }, {});
+
+      return dayOrder
+        .filter(day => grouped[day]?.length)
+        .map(day => {
+          const dayRows = grouped[day]
+            .sort((a, b) => a.period - b.period || a.paper.name.localeCompare(b.paper.name))
+            .map(row => `
+              <tr>
+                <td></td>
+                <td><span class="badge blue">P${row.period}</span></td>
+                <td>${row.paper.name}</td>
+              </tr>
+            `)
+            .join('');
+
+          return `
+            <tr class="day-group-row"><td colspan="3">${day}</td></tr>
+            ${dayRows}
+          `;
+        })
+        .join('');
+    }
+
+    async function loadStats() {
+      try {
+        if (!papers.length) await loadPapers();
+        const overall = await api('/stats/attendance');
+        document.getElementById('ov-pct').textContent = pctText(overall.percentage);
+        document.getElementById('ov-attended').textContent = overall.attended;
+        document.getElementById('ov-held').textContent = overall.held;
+        document.getElementById('overall-stats').style.display = 'grid';
+        const results = await Promise.all(papers.map(async paper => ({
+          paper,
+          stats: await api(`/stats/attendance/${paper.id}`),
+        })));
+        document.getElementById('paper-stats-body').innerHTML = results.map(({ paper, stats }) => `
+          <tr>
+            <td>${paper.name}</td>
+            <td>${stats.attended}</td>
+            <td>${stats.held}</td>
+            <td>${pctText(stats.percentage)}</td>
+          </tr>
+        `).join('');
+        document.getElementById('paper-stats-table').style.display = 'table';
+        document.getElementById('stats-empty').style.display = 'none';
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    async function saveSemesterStart() {
+      const value = document.getElementById('sem-start-date').value;
+      if (!value) return showMessage('Choose a semester start date.', 'error');
+      try {
+        await api(`/settings/${value}`, { method: 'POST' });
+        showMessage('Semester start saved.');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    async function refreshAll() {
+      try {
+        await loadPapers();
+        await loadTimetable();
+        await ensureAttendanceForSelectedDate();
+        showMessage('Refreshed.');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    loadPapers().then(() => addTimetableRow()).catch(() => addTimetableRow());
+    ensureAttendanceForSelectedDate().catch(() => {});
+  </script>
+</body>
+</html>
