@@ -1,6 +1,6 @@
 from sqlalchemy import select, and_, func
 from sqlalchemy.orm import Session
-from datetime import date, timedelta
+from datetime import date, timedelta,datetime
 
 from schemas import Day, AttendanceUpdateRequest
 import models
@@ -82,6 +82,17 @@ def create_attendance_for_date(target_date: date, timetable_rows: list[models.Ti
 
 
 def generate_default_attendance_for_date(target_date: date, session: Session):
+    if target_date>date.today():
+        return
+    
+    sem_start_date=session.execute(select(models.Settings).where(models.Settings.key=='SEM_START_DATE')).scalar_one_or_none()
+
+    if not sem_start_date:
+        return
+
+    if target_date<date.fromisoformat(sem_start_date.value):
+        return
+    
     target_date_weekday = weekday_name(target_date.weekday())
 
     timetable_rows_result = session.execute(select(models.TimeTable).where(models.TimeTable.day == target_date_weekday))

@@ -37,7 +37,7 @@ held=True = the active class for that slot
 
 That makes substitutions possible without deleting history. The original scheduled class can be marked `held=False`, and the substitute class can be inserted as the active row.
 
-## Good Parts Of The Design
+## Implementation Details
 
 - The code separates HTTP routing from business logic, which keeps the routers readable.
 - Domain exceptions such as `NotFoundException`, `AlreadyExistsException`, and `BadRequestException` make API failures more intentional.
@@ -86,9 +86,7 @@ Open it in a browser while the backend is running.
 
 ## Limitations
 
-- There are no automated tests yet. The most important next step is testing substitutions, cancelled/restored classes, duplicate periods, and attendance stats.
-- The app uses SQLite and `Base.metadata.create_all()`, which is fine for local development but not a real migration strategy.
-- Some domain invariants are enforced in service code rather than database constraints.
+- There are no automated tests yet. 
 - The scheduler assumes the app is running continuously.
 - The frontend is intentionally simple and does not have a full state-management structure.
 - Authentication and multi-user support are not implemented.

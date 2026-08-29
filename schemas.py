@@ -65,7 +65,7 @@ class AttendanceResponse(BaseModel):
 
 class DayAttendanceResponse(BaseModel):
     date: date
-    entries: list[AttendanceResponse]
+    entries: list[AttendanceResponse] | None
 
 
 class AttendanceUpdateRequest(BaseModel):
